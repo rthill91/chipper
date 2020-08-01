@@ -29,7 +29,7 @@ class Opcode(Enum):
     SE_VX_NN    = _opcode('SE',   0x3000, 0xf000, [_argument(0x0f00, 8), _argument(0x00ff, 0)])
     SNE_VX_NN   = _opcode('SNE',  0x4000, 0xf000, [_argument(0x0f00, 8), _argument(0x00ff, 0)])
     SE_VX_VY    = _opcode('SE',   0x5000, 0xf00f, [_argument(0x0f00, 8), _argument(0x00f0, 4)])
-    LD_VX_NN    = _opcode('LD',   0x6000, 0xf000, [_arugment(0x0f00, 8), _argument(0x00ff, 0)])
+    LD_VX_NN    = _opcode('LD',   0x6000, 0xf000, [_argument(0x0f00, 8), _argument(0x00ff, 0)])
     ADD_VX_NN   = _opcode('ADD',  0x7000, 0xf000, [_argument(0x0f00, 8), _argument(0x00ff, 0)])
     LD_VX_VY    = _opcode('LD',   0x8000, 0xf00f, [_argument(0x0f00, 8), _argument(0x00f0, 4)])
     OR_VX_VY    = _opcode('OR',   0x8001, 0xf00f, [_argument(0x0f00, 8), _argument(0x00f0, 4)])
