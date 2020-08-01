@@ -35,4 +35,5 @@ opcodes = [
     opcode('LD_B_VX',      'LD',   0xf033, 0xf0ff, [argument(0x0000, 0), argument(0x0f00, 8)]),
     opcode('LD_I_VX',      'LD',   0xf055, 0xf0ff, [argument(0x0000, 0), argument(0x0f00, 8)]),
     opcode('LD_VX_I',      'LD',   0xf065, 0xf0ff, [argument(0x0f00, 8), argument(0x0000, 0)]),
+    opcode('DW',           'DW',   0x0000, 0x0000, [argument(0xffff, 0)]),
 ]
