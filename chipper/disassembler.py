@@ -10,7 +10,7 @@ def disassemble(opcode):
     args = [((opcode & arg.mask) >> arg.shift) for arg in instruction.arguments]
 
 
-    return (instruction, args)
+    return (instruction.id, args)
 
 
 def test_runner():
