@@ -1,10 +1,13 @@
 from .disassembler import disassemble
+from .display import Display
 
 import numpy as np
 
 from random import randint
 
-#TODO: replace lists with numpy arrays of dtype u1
+
+DISPLAY_HEIGHT = 64
+DISPLAY_WIDTH = 32
 
 
 class CPU:
@@ -22,6 +25,8 @@ class CPU:
         self._st = 0
         # delay timer
         self._dt = 0
+
+        self._display = Display(DISPLAY_WIDTH, DISPLAY_HEIGHT)
 
         self._inst_switch = {
             'CLS': self._cls,
@@ -83,8 +88,7 @@ class CPU:
         00E0
         Clear the display
         """
-        #TODO
-        pass
+        self._display.clear()
 
     def _ret(args):
         """
@@ -296,10 +300,25 @@ class CPU:
         """
         Dxyn
         Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision
-        The interpreter reads n bytes from memory, starting at the address stored in I. These bytes are then displayed as sprites on screen at coordinates (Vx, Vy). Sprites are XORed onto the existing screen. If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0. If the sprite is positioned so part of it is outside teh coordinates of the display, it wraps around to th opposite side of the screen.
+        The interpreter reads n bytes from memory, starting at the address stored in I. These bytes are then displayed as sprites on screen at coordinates (Vx, Vy). Sprites are XORed onto the existing screen. If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0. If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen.
         """
-        #TODO
-        pass
+        if self._i > (4095 - args[2]):
+            raise Exception('Memory out of bounds.')
+
+        self._registers[0xf] = 0
+
+        for i in range(0, args[2]):
+            byte = self._memory[self._i + i]
+            for position in range(0, 8):
+                result = 1 if (1 << (7 - position)) else 0
+                value = byte & result
+                x = (self._registers[args[0]] + position) % DISPLAY_WIDTH
+                y = (self._registers[args[1]] + i) % DISPLAY_HEIGHT
+
+                if self._display.draw_pixel(x, y, value):
+                    self._registers[0xf] = 1
+
+        self._next_instruction()
 
     def _skp_vx(args):
         """
