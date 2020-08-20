@@ -108,7 +108,8 @@ class CPU:
         Jump to location nnn
         The interpreter sets the program counter to nnn.
         """
-        self._pc = args[0]
+        addr = args[0]
+        self._pc = addr
 
     def _call_addr(args):
         """
@@ -116,11 +117,12 @@ class CPU:
         Call subroutine at nnn
         The interpreter increments the stack pointer, then puts the current PC on the top of the stack. The PC is then set to nnn.
         """
+        addr = args[0]
         if self._sp == 15:
             raise Exception('Stack Overflow')
         self._sp += 1
         self._stack[self._pc] = self._pc + 2
-        self._pc = args[0]
+        self._pc = addr
 
     def _se_vx_nn(args):
         """
@@ -128,7 +130,9 @@ class CPU:
         Skip next instruction if Vx = nn
         The interpreter compares register Vx to nn, and if they are equal, increments the program counter by 2.
         """
-        if self._registers[args[0]] == args[1]:
+        vx = args[0]
+        nn = args[1]
+        if self._registers[vx] == nn:
             self._skip_instruction()
         else:
             self._next_instruction()
@@ -139,7 +143,9 @@ class CPU:
         Skip next instruction if Vx != nn
         The interpreter compares register Vx to nn, and if they are not equal, increments the program counter by 2.
         """
-        if self._registers[args[0]] != args[1]:
+        vx = args[0]
+        nn = args[1]
+        if self._registers[vx] != nn:
             self._skip_instruction()
         else:
             self._next_instruction()
@@ -150,7 +156,9 @@ class CPU:
         Skip next instruction if Vx = Vy
         The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
         """
-        if self._registers[args[0]] == self._registers[args[1]]:
+        vx = args[0]
+        vy = args[1]
+        if self._registers[vx] == self._registers[vy]:
             self._skip_instruction()
         else:
             self._next_instruction()
@@ -161,7 +169,9 @@ class CPU:
         Set Vx = nn
         The interpreter puts the value nn into register Vx
         """
-        self._registers[args[0]] = args[1]
+        vx = args[0]
+        nn = args[1]
+        self._registers[vx] = nn
         self._next_instruction()
 
     def _add_vx_nn(args):
@@ -170,7 +180,9 @@ class CPU:
         Set Vx = Vx + nn
         Adds the value nn to the value of register Vx, then stores the result in Vx.
         """
-        self._registers[args[0]] += args[1]
+        vx = args[0]
+        nn = args[1]
+        self._registers[vx] += nn
         self._next_instruction()
 
     def _ld_vx_vy(args):
@@ -179,7 +191,9 @@ class CPU:
         Set Vx = Vy
         Stores the value of register Vy in register Vx.
         """
-        self._registers[args[0]] = self._registers[args[1]]
+        vx = args[0]
+        vy = args[1]
+        self._registers[vx] = self._registers[vy]
         self._next_instruction()
 
     def _or_vx_vy(args):
@@ -188,7 +202,9 @@ class CPU:
         Set Vx = Vx OR Vy
         Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx.
         """
-        self._registers[args[0]] |= self._registers[args[1]]
+        vx = args[0]
+        vy = args[1]
+        self._registers[vx] |= self._registers[vy]
         self._next_instruction()
 
     def _and_vx_vy(args):
@@ -197,7 +213,9 @@ class CPU:
         Set Vx = Vx AND Vy
         Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx.
         """
-        self._registers[args[0]] &= self._registers[args[1]]
+        vx = args[0]
+        vy = args[1]
+        self._registers[vx] &= self._registers[vy]
         self._next_instruction()
 
     def _xor_vx_vy(args):
@@ -206,7 +224,9 @@ class CPU:
         Set Vx = Vx XOR Vy
         Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the result in Vx.
         """
-        self._registers[args[0]] ^= self._registers[args[1]]
+        vx = args[0]
+        vy = args[1]
+        self._registers[vx] ^= self._registers[vy]
         self._next_instruction()
 
     def _add_vx_vy(args):
@@ -215,8 +235,10 @@ class CPU:
         Set Vx = Vx + Vy, set VF = carry
         The values of Vx and Vy are added together. If the result is greater than 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
         """
-        self._registers[args[0]] += self._registers[args[1]]
-        self._registers[0xf] = int(self._registers[args[0]] + self._registers[args[1]] > 0xff)
+        vx = args[0]
+        vy = args[1]
+        self._registers[vx] += self._registers[vy]
+        self._registers[0xf] = int(self._registers[vx] + self._registers[vy] > 0xff)
         self._next_instruction()
 
     def _sub_vx_vy(args):
@@ -225,8 +247,10 @@ class CPU:
         Set Vx = Vx - Vy, set VF = NOT borrow
         If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
         """
-        self._registers[0xf] = int(self._registers[args[0]] > self._registers[args[1]])
-        self._registers[args[0]] -= self._registers[args[1]]
+        vx = args[0]
+        vy = args[1]
+        self._registers[0xf] = int(self._registers[vx] > self._registers[vy])
+        self._registers[vx] -= self._registers[vy]
         self._next_instruction()
 
     def _shr_vx_vy(args):
@@ -235,8 +259,9 @@ class CPU:
         Set Vx = Vx SHR 1
         If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
         """
-        self._registers[0xf] =  (self._registers[args[0]] & 1)
-        self._registers[args[0]] >>= 1
+        vx = args[0]
+        self._registers[0xf] =  (self._registers[vx] & 1)
+        self._registers[vx] >>= 1
         self._next_instruction()
 
     def _subn_vx_vy(args):
@@ -245,8 +270,10 @@ class CPU:
         Set Vx = Vy - Vx, set VF = NOT borrow
         If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
         """
-        self._registers[0xf] = int(self._registers[args[0]] <= self._registers[args[1]])
-        self._registers[args[0]] = self._registers[args[1]] - self._registers[args[0]]
+        vx = args[0]
+        vy = args[1]
+        self._registers[0xf] = int(self._registers[vx] <= self._registers[vy])
+        self._registers[vx] = self._registers[vy] - self._registers[vx]
         self._next_instruction()
 
     def _shl_vx_vy(args):
@@ -255,8 +282,9 @@ class CPU:
         Set Vx = Vx SHL 1
         If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
         """
-        self._registers[0xf] = self._registers[args[0]] >> 7
-        self._registers[args[0]] <<= 1
+        vx = args[0]
+        self._registers[0xf] = self._registers[vx] >> 7
+        self._registers[vx] <<= 1
         self._next_instruction()
 
     def _sne_vx_vy(args):
@@ -265,7 +293,9 @@ class CPU:
         Skip next instruction if Vx != Vy
         The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.
         """
-        if self._registers[args[0]] != self._registers[args[1]]:
+        vx = args[0]
+        vy = args[1]
+        if self._registers[vx] != self._registers[vy]:
             self._skip_instruction()
         else:
             self._next_instruction()
@@ -276,7 +306,8 @@ class CPU:
         Set I = nnn
         The value of register I is set to nnn.
         """
-        self._i = args[0]
+        i = args[0]
+        self._i = i
         self._next_instruction()
 
     def _jp_v0_addr(args):
@@ -285,7 +316,8 @@ class CPU:
         Jump to location nnn + V0
         The program counter is set to nnn plus the value of V0.
         """
-        self._pc = self._registers[0] + args[1]
+        addr = args[1]
+        self._pc = self._registers[0] + addr
 
     def _rnd_vx_nn(args):
         """
@@ -293,7 +325,9 @@ class CPU:
         Set Vx = random byte AND nn
         The interpreter generates a random number from 0 to 255, which is then ANDed with the value nn. The results are stored in Vx.
         """
-        self._registers[args[0]] = args[1] & randint(0, 255)
+        vx = args[0]
+        nn = args[1]
+        self._registers[vx] = nn & randint(0, 255)
         self._next_instruction()
 
     def _drw_vx_vy_n(args):
@@ -302,18 +336,21 @@ class CPU:
         Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision
         The interpreter reads n bytes from memory, starting at the address stored in I. These bytes are then displayed as sprites on screen at coordinates (Vx, Vy). Sprites are XORed onto the existing screen. If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0. If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen.
         """
-        if self._i > (4095 - args[2]):
+        vx = args[0]
+        vy = args[1]
+        n = args[2]
+        if self._i > (4095 - n):
             raise Exception('Memory out of bounds.')
 
         self._registers[0xf] = 0
 
-        for i in range(0, args[2]):
+        for i in range(0, n):
             byte = self._memory[self._i + i]
             for position in range(0, 8):
                 result = 1 if (1 << (7 - position)) else 0
                 value = byte & result
-                x = (self._registers[args[0]] + position) % DISPLAY_WIDTH
-                y = (self._registers[args[1]] + i) % DISPLAY_HEIGHT
+                x = (self._registers[vx] + position) % DISPLAY_WIDTH
+                y = (self._registers[vy] + i) % DISPLAY_HEIGHT
 
                 if self._display.draw_pixel(x, y, value):
                     self._registers[0xf] = 1
@@ -344,7 +381,8 @@ class CPU:
         Set Vx = delay timer value
         The value of DT is placed into Vx.
         """
-        self._registers[args[0]] = self._dt
+        vx = args[0]
+        self._registers[vx] = self._dt
 
     def _ld_vx_n(args):
         """
@@ -361,7 +399,8 @@ class CPU:
         Set delay timer = Vx
         DT is set equal to the value of Vx.
         """
-        self._dt = self._registers[args[0]]
+        vx = args[0]
+        self._dt = self._registers[vx]
 
     def _ld_st_vx(args):
         """
@@ -369,7 +408,8 @@ class CPU:
         Set sound timer = Vx
         ST is set equal to the value of Vx.
         """
-        self._st = self._registers[args[0]]
+        vx = args[0]
+        self._st = self._registers[vx]
 
     def _add_i_vx(args):
         """
@@ -377,7 +417,8 @@ class CPU:
         Set I = I + Vx
         The values of I and Vx are added, and the results are stored in I.
         """
-        self._i += self._registers[args[0]]
+        vx = args[0]
+        self._i += self._registers[vx]
 
     def _ld_f_vx(args):
         """
