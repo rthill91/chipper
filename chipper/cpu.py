@@ -1,5 +1,6 @@
 from .disassembler import disassemble
 from .display import Display
+from .font_set import FONT_SET
 
 import numpy as np
 
@@ -12,19 +13,7 @@ DISPLAY_WIDTH = 32
 
 class CPU:
     def __init__(self):
-        self._memory = np.zeros(4096, dtype='u1')
-        self._registers = np.zeros(16, dtype='u1')
-        self._stack = np.zeros(16, dtype='u2')
-        # Program Counter
-        self._pc = 0x200
-        # index register
-        self._i = 0
-        # stack pointer
-        self._sp = -1
-        # sound timer
-        self._st = 0
-        # delay timer
-        self._dt = 0
+        self.reset()
 
         self._display = Display(DISPLAY_WIDTH, DISPLAY_HEIGHT)
 
@@ -65,6 +54,25 @@ class CPU:
             'LD_VX_I': self._ld_vx_i,
         }
 
+    def reset(self):
+        self._memory = np.zeros(4096, dtype='u1')
+        self._registers = np.zeros(16, dtype='u1')
+        self._stack = np.zeros(16, dtype='u2')
+        # Program Counter
+        self._pc = 0x200
+        # index register
+        self._i = 0
+        # stack pointer
+        self._sp = -1
+        # sound timer
+        self._st = 0
+        # delay timer
+        self._dt = 0
+
+    def load(self):
+        self.reset()
+        for i in range(len(FONT_SET)):
+            self._memory[i] = FONT_SET[i]
 
     def _fetch(self):
         return self._memory[self._pc]
@@ -75,7 +83,10 @@ class CPU:
     def _execute(instruction):
         inst_id, args = instruction
 
-        self._inst_switch[inst_id](args)
+        try:
+            self._inst_switch[inst_id](args)
+        except KeyError:
+            raise Exception("Illegal Instruction")
 
     def _next_instruction(self):
         this._pc += 2
@@ -363,8 +374,13 @@ class CPU:
         Skip next instruction if key with the value of Vx is pressed
         Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
         """
-        #TODO
-        pass
+        vx = args[0]
+        key = self._display.get_key_down()
+        if key == vx:
+            self._skip_instruction()
+        else:
+            self._next_instruction()
+
 
     def _sknp_vx(args):
         """
@@ -372,8 +388,12 @@ class CPU:
         Skip next instruction if key with the value of Vx is not pressed
         Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
         """
-        #TODO
-        pass
+        vx = args[0]
+        key = self._display.get_key()
+        if key != vx:
+            self._skip_instruction()
+        else:
+            self._next_instruction()
 
     def _ld_vx_dt(args):
         """
@@ -383,6 +403,7 @@ class CPU:
         """
         vx = args[0]
         self._registers[vx] = self._dt
+        self._next_instruction()
 
     def _ld_vx_n(args):
         """
@@ -390,8 +411,12 @@ class CPU:
         Wait for a key press, store the value of the key in Vx
         All execution stops until a key is pressed, then the value of that key is stored in Vx.
         """
-        #TODO
-        pass
+        vx = args[0]
+        key = None
+        while not key:
+            key = self._display.get_key_down()
+        self._registers[vx] = key
+        self._next_instruction()
 
     def _ld_dt_vx(args):
         """
@@ -399,8 +424,9 @@ class CPU:
         Set delay timer = Vx
         DT is set equal to the value of Vx.
         """
-        vx = args[0]
+        vx = args[1]
         self._dt = self._registers[vx]
+        self._next_instruction()
 
     def _ld_st_vx(args):
         """
@@ -408,8 +434,9 @@ class CPU:
         Set sound timer = Vx
         ST is set equal to the value of Vx.
         """
-        vx = args[0]
+        vx = args[1]
         self._st = self._registers[vx]
+        self._next_instruction()
 
     def _add_i_vx(args):
         """
@@ -417,8 +444,9 @@ class CPU:
         Set I = I + Vx
         The values of I and Vx are added, and the results are stored in I.
         """
-        vx = args[0]
+        vx = args[1]
         self._i += self._registers[vx]
+        self._next_instruction()
 
     def _ld_f_vx(args):
         """
@@ -426,16 +454,25 @@ class CPU:
         Set I = location of sprite for digit Vx
         The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx.
         """
-        #TODO
-        pass
+        vx = args[1]
+        if self._registers[vx] > 0xf:
+            raise Exception(f"Invalid Digit {self._registers[vx]}")
+        self._i = self._registers[vx * 5]
+        self._next_instruction()
 
     def _ld_b_vx(args):
         """
         Fx33
         Store BCD representation of Vx in memory locations I, I+1, and I+2.
         """
-        #TODO
-        pass
+        vx = args[1]
+        lst = list(map(int, str(vx)))
+        while len(lst) < 3:
+            lst.insert(0, 0)
+        self._memory[self._i] = lst[0]
+        self._memory[self._i + 1] = lst[1]
+        self._memory[self._i + 2] = lst[2]
+        self._next_instruction()
 
     def _ld_i_vx(args):
         """
@@ -443,21 +480,26 @@ class CPU:
         Store registers V0 through Vx in memory starting at location I
         The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
         """
-        #TODO
-        pass
+        vx = args[1]
+        if self._i > (4095 - vx):
+            raise Exception("Memory out of bounds")
+        for i in range(vx):
+            self._memory[self._i + i] = self._registers[i]
+        self._next_instruction()
 
     def _ld_vx_i(args):
         """
         Fx65
-        Read _registers V0 through Vx from memory starting at location I
+        Read registers V0 through Vx from memory starting at location I
         The interpreter reads values from memory starting at location I into registers V0 through Vx.
         """
-        #TODO
-        pass
+        vx = args[0]
+        if this._i > (4095 - vx):
+            raise Exception("Memory out of bounds")
+        for i in range(vx):
+            self._registers[i] = self._memory[self._i + i]
+
+        self._next_instruction()
 
     def _dw(args):
-        """
-        def
-        """
-        #TODO
-        pass
+        raise Exception("Illegal Instruction")
