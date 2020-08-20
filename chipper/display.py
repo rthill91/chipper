@@ -1,9 +1,11 @@
 import curses
 
+
 class Display:
     def __init__(self, width, height):
         self._screen_size = (width, height)
         self._screen = curses.initscr()
+        self._screen.nodelay(True)
         self.clear()
 
     def clear(self):
@@ -16,14 +18,22 @@ class Display:
                 self._screen.addstr(i, j, ' ')
         self._screen.refresh()
 
-    def draw_pixel(self, x, y, value):
+    def draw_pixel(self, x, y, value='\u2588'):
         """
         Draw value at provided (x,y) coords
         """
         self._screen.addstr(y, x, value)
 
+    def get_key_down(self):
+        try:
+            return self._screen.getkey()
+        except curses.error:
+            return None
+
+
+
 
 if __name__ == '__main__':
     d = Display(32, 64)
-    d.draw_pixel(0, 1, 'T')
+    d.draw_pixel(0, 1)
     d._screen.getch()
