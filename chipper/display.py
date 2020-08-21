@@ -1,4 +1,5 @@
 import curses
+import numpy as np
 
 
 class Display:
@@ -6,6 +7,7 @@ class Display:
         self._screen_size = (width, height)
         self._screen = curses.initscr()
         self._screen.nodelay(True)
+        self._buffer = np.zeros([height, width], dtype=bool)
         self.clear()
 
     def clear(self):
@@ -18,22 +20,21 @@ class Display:
                 self._screen.addstr(i, j, ' ')
         self._screen.refresh()
 
-    def draw_pixel(self, x, y, value='\u2588'):
+    def draw_pixel(self, x, y, value):
         """
         Draw value at provided (x,y) coords
         """
-        self._screen.addstr(y, x, value)
+        collision = self._buffer[x][y] & value
+        value ^= self._buffer[x][y]
+        if value:
+            self._screen.addstr(x, y, '\u2588')
+        else:
+            self._screen.addstr(x, y, ' ')
+        self._buffer[x][y] = value
+        return collision
 
     def get_key_down(self):
         try:
             return self._screen.getkey()
         except curses.error:
             return None
-
-
-
-
-if __name__ == '__main__':
-    d = Display(32, 64)
-    d.draw_pixel(0, 1)
-    d._screen.getch()

@@ -69,51 +69,71 @@ class CPU:
         # delay timer
         self._dt = 0
 
-    def load(self):
+    def load(self, rom):
         self.reset()
+        # Load default font set
         for i in range(len(FONT_SET)):
             self._memory[i] = FONT_SET[i]
 
+        mem_start = self._pc
+        for i in range(len(rom)):
+            self._memory[mem_start + i] = rom[i]
+
+    def tick(self):
+        """
+        Decrement Timers
+        """
+        if self._dt > 0:
+            self._dt -= 1
+
+        if self._st > 0:
+            self._st -= 1
+
+
+    def step(self):
+        opcode = self._fetch()
+        instruction = self._decode(opcode)
+        self._execute(instruction)
+
     def _fetch(self):
-        return self._memory[self._pc]
+        return (self._memory[self._pc] << 8) | (self._memory[self._pc + 1])
 
     def _decode(self, opcode):
         return disassemble(opcode)
 
-    def _execute(instruction):
+    def _execute(self, instruction):
         inst_id, args = instruction
 
         try:
             self._inst_switch[inst_id](args)
         except KeyError:
-            raise Exception("Illegal Instruction")
+            raise Exception(f"Illegal Instruction: {inst_id}")
 
     def _next_instruction(self):
-        this._pc += 2
+        self._pc += 2
 
     def _skip_instruction(self):
-        this._pc += 4
+        self._pc += 4
 
-    def _cls(args):
+    def _cls(self, args):
         """
         00E0
         Clear the display
         """
         self._display.clear()
 
-    def _ret(args):
+    def _ret(self, args):
         """
         00EE
         Return from a subroutine
         The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer.
-
         """
-        if this._sp == -1:
+        if self._sp == -1:
             raise Exception('Stack Underflow')
-        this._pc = this._stack[this._sp]
-        this._sp -= 1
+        self._pc = self._stack[self._sp]
+        self._sp -= 1
 
-    def _jp_addr(args):
+    def _jp_addr(self, args):
         """
         1nnn
         Jump to location nnn
@@ -122,20 +142,20 @@ class CPU:
         addr = args[0]
         self._pc = addr
 
-    def _call_addr(args):
+    def _call_addr(self, args):
         """
         2nnn
         Call subroutine at nnn
         The interpreter increments the stack pointer, then puts the current PC on the top of the stack. The PC is then set to nnn.
         """
         addr = args[0]
-        if self._sp == 15:
+        if self._sp >= 15:
             raise Exception('Stack Overflow')
         self._sp += 1
-        self._stack[self._pc] = self._pc + 2
+        self._stack[self._sp] = self._pc + 2
         self._pc = addr
 
-    def _se_vx_nn(args):
+    def _se_vx_nn(self, args):
         """
         3xnn
         Skip next instruction if Vx = nn
@@ -148,7 +168,7 @@ class CPU:
         else:
             self._next_instruction()
 
-    def _sne_vx_nn(args):
+    def _sne_vx_nn(self, args):
         """
         4xnn
         Skip next instruction if Vx != nn
@@ -161,7 +181,7 @@ class CPU:
         else:
             self._next_instruction()
 
-    def _se_vx_vy(args):
+    def _se_vx_vy(self, args):
         """
         5xy0
         Skip next instruction if Vx = Vy
@@ -174,7 +194,7 @@ class CPU:
         else:
             self._next_instruction()
 
-    def _ld_vx_nn(args):
+    def _ld_vx_nn(self, args):
         """
         6xnn
         Set Vx = nn
@@ -185,7 +205,7 @@ class CPU:
         self._registers[vx] = nn
         self._next_instruction()
 
-    def _add_vx_nn(args):
+    def _add_vx_nn(self, args):
         """
         7xnn
         Set Vx = Vx + nn
@@ -196,7 +216,7 @@ class CPU:
         self._registers[vx] += nn
         self._next_instruction()
 
-    def _ld_vx_vy(args):
+    def _ld_vx_vy(self, args):
         """
         8xy0
         Set Vx = Vy
@@ -207,7 +227,7 @@ class CPU:
         self._registers[vx] = self._registers[vy]
         self._next_instruction()
 
-    def _or_vx_vy(args):
+    def _or_vx_vy(self, args):
         """
         8xy1
         Set Vx = Vx OR Vy
@@ -218,7 +238,7 @@ class CPU:
         self._registers[vx] |= self._registers[vy]
         self._next_instruction()
 
-    def _and_vx_vy(args):
+    def _and_vx_vy(self, args):
         """
         8xy2
         Set Vx = Vx AND Vy
@@ -229,7 +249,7 @@ class CPU:
         self._registers[vx] &= self._registers[vy]
         self._next_instruction()
 
-    def _xor_vx_vy(args):
+    def _xor_vx_vy(self, args):
         """
         8xy3
         Set Vx = Vx XOR Vy
@@ -240,7 +260,7 @@ class CPU:
         self._registers[vx] ^= self._registers[vy]
         self._next_instruction()
 
-    def _add_vx_vy(args):
+    def _add_vx_vy(self, args):
         """
         8xy4
         Set Vx = Vx + Vy, set VF = carry
@@ -252,7 +272,7 @@ class CPU:
         self._registers[0xf] = int(self._registers[vx] + self._registers[vy] > 0xff)
         self._next_instruction()
 
-    def _sub_vx_vy(args):
+    def _sub_vx_vy(self, args):
         """
         8xy5
         Set Vx = Vx - Vy, set VF = NOT borrow
@@ -264,7 +284,7 @@ class CPU:
         self._registers[vx] -= self._registers[vy]
         self._next_instruction()
 
-    def _shr_vx_vy(args):
+    def _shr_vx_vy(self, args):
         """
         8xy6
         Set Vx = Vx SHR 1
@@ -275,7 +295,7 @@ class CPU:
         self._registers[vx] >>= 1
         self._next_instruction()
 
-    def _subn_vx_vy(args):
+    def _subn_vx_vy(self, args):
         """
         8xy7
         Set Vx = Vy - Vx, set VF = NOT borrow
@@ -287,7 +307,7 @@ class CPU:
         self._registers[vx] = self._registers[vy] - self._registers[vx]
         self._next_instruction()
 
-    def _shl_vx_vy(args):
+    def _shl_vx_vy(self, args):
         """
         8xyE
         Set Vx = Vx SHL 1
@@ -298,7 +318,7 @@ class CPU:
         self._registers[vx] <<= 1
         self._next_instruction()
 
-    def _sne_vx_vy(args):
+    def _sne_vx_vy(self, args):
         """
         9xy0
         Skip next instruction if Vx != Vy
@@ -311,7 +331,7 @@ class CPU:
         else:
             self._next_instruction()
 
-    def _ld_i_addr(args):
+    def _ld_i_addr(self, args):
         """
         Annn
         Set I = nnn
@@ -321,7 +341,7 @@ class CPU:
         self._i = i
         self._next_instruction()
 
-    def _jp_v0_addr(args):
+    def _jp_v0_addr(self, args):
         """
         Bnnn
         Jump to location nnn + V0
@@ -330,7 +350,7 @@ class CPU:
         addr = args[1]
         self._pc = self._registers[0] + addr
 
-    def _rnd_vx_nn(args):
+    def _rnd_vx_nn(self, args):
         """
         Cxnn
         Set Vx = random byte AND nn
@@ -341,7 +361,7 @@ class CPU:
         self._registers[vx] = nn & randint(0, 255)
         self._next_instruction()
 
-    def _drw_vx_vy_n(args):
+    def _drw_vx_vy_n(self, args):
         """
         Dxyn
         Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision
@@ -368,7 +388,7 @@ class CPU:
 
         self._next_instruction()
 
-    def _skp_vx(args):
+    def _skp_vx(self, args):
         """
         Ex9E
         Skip next instruction if key with the value of Vx is pressed
@@ -382,20 +402,20 @@ class CPU:
             self._next_instruction()
 
 
-    def _sknp_vx(args):
+    def _sknp_vx(self, args):
         """
         ExA1
         Skip next instruction if key with the value of Vx is not pressed
         Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
         """
         vx = args[0]
-        key = self._display.get_key()
+        key = self._display.get_key_down()
         if key != vx:
             self._skip_instruction()
         else:
             self._next_instruction()
 
-    def _ld_vx_dt(args):
+    def _ld_vx_dt(self, args):
         """
         Fx07
         Set Vx = delay timer value
@@ -405,7 +425,7 @@ class CPU:
         self._registers[vx] = self._dt
         self._next_instruction()
 
-    def _ld_vx_n(args):
+    def _ld_vx_n(self, args):
         """
         Fx0A
         Wait for a key press, store the value of the key in Vx
@@ -418,7 +438,7 @@ class CPU:
         self._registers[vx] = key
         self._next_instruction()
 
-    def _ld_dt_vx(args):
+    def _ld_dt_vx(self, args):
         """
         Fx15
         Set delay timer = Vx
@@ -428,7 +448,7 @@ class CPU:
         self._dt = self._registers[vx]
         self._next_instruction()
 
-    def _ld_st_vx(args):
+    def _ld_st_vx(self, args):
         """
         Fx18
         Set sound timer = Vx
@@ -438,7 +458,7 @@ class CPU:
         self._st = self._registers[vx]
         self._next_instruction()
 
-    def _add_i_vx(args):
+    def _add_i_vx(self, args):
         """
         Fx1E
         Set I = I + Vx
@@ -448,7 +468,7 @@ class CPU:
         self._i += self._registers[vx]
         self._next_instruction()
 
-    def _ld_f_vx(args):
+    def _ld_f_vx(self, args):
         """
         Fx29
         Set I = location of sprite for digit Vx
@@ -460,7 +480,7 @@ class CPU:
         self._i = self._registers[vx * 5]
         self._next_instruction()
 
-    def _ld_b_vx(args):
+    def _ld_b_vx(self, args):
         """
         Fx33
         Store BCD representation of Vx in memory locations I, I+1, and I+2.
@@ -474,7 +494,7 @@ class CPU:
         self._memory[self._i + 2] = lst[2]
         self._next_instruction()
 
-    def _ld_i_vx(args):
+    def _ld_i_vx(self, args):
         """
         Fx55
         Store registers V0 through Vx in memory starting at location I
@@ -487,19 +507,23 @@ class CPU:
             self._memory[self._i + i] = self._registers[i]
         self._next_instruction()
 
-    def _ld_vx_i(args):
+    def _ld_vx_i(self, args):
         """
         Fx65
         Read registers V0 through Vx from memory starting at location I
         The interpreter reads values from memory starting at location I into registers V0 through Vx.
         """
         vx = args[0]
-        if this._i > (4095 - vx):
+        if self._i > (4095 - vx):
             raise Exception("Memory out of bounds")
         for i in range(vx):
             self._registers[i] = self._memory[self._i + i]
 
         self._next_instruction()
 
-    def _dw(args):
+    def _dw(self, args):
         raise Exception("Illegal Instruction")
+
+
+if __name__ == '__main__':
+    chipper = CPU()

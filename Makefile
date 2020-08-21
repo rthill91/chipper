@@ -1,6 +1,6 @@
 .PHONY: run
-run: install-deps
-	@poetry run chipper
+run:
+	@poetry run chipper roms/PONG 2> output
 
 
 .PHONY: install-deps

@@ -5,7 +5,7 @@ description = ""
 authors = ["Ryan Hill <rthill91@gmail.com>"]
 
 [tool.poetry.scripts]
-chipper = "chipper.disassembler:test_runner"
+chipper = "chipper.main:run"
 
 [tool.poetry.dependencies]
 python = "^3.8"
