@@ -5,6 +5,9 @@ from .font_set import FONT_SET
 import numpy as np
 
 from random import randint
+import warnings
+
+warnings.filterwarnings('ignore')
 
 
 DISPLAY_HEIGHT = 64

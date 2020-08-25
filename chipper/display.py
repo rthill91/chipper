@@ -10,6 +10,11 @@ class Display:
         self._buffer = np.zeros([height, width], dtype=bool)
         self.clear()
 
+    def deinit(self):
+        curses.nocbreak()
+        self._screen.keypad(False)
+        curses.echo()
+
     def clear(self):
         """
         Clear Display

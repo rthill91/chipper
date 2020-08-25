@@ -13,13 +13,17 @@ def run():
     with open(file_path, 'rb') as f:
         rom = bytearray(f.read())
 
-    cpu = CPU()
-    cpu.load(rom)
+    try:
+        cpu = CPU()
+        cpu.load(rom)
 
-    timer = 0
-    while True:
-        timer = cycle(cpu, timer)
-        # sleep(0.1)
+        timer = 0
+        while True:
+            timer = cycle(cpu, timer)
+            # sleep(0.1)
+    except KeyboardInterrupt:
+        cpu._display.deinit()
+        exit(0)
 
 
 def cycle(cpu, timer):
