@@ -19,6 +19,7 @@ class Display:
         self._screen_size = (width, height)
         self._screen = curses.initscr()
         self._screen.nodelay(True)
+        curses.noecho()
         self._buffer = np.zeros([width, height], dtype=bool)
         self.clear()
 

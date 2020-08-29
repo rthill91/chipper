@@ -579,7 +579,7 @@ class CPU:
         vx = args[1]
         if self._i > (4095 - vx):
             raise Exception("Memory out of bounds")
-        for i in range(vx):
+        for i in range(vx+1):
             self._memory[self._i + i] = self._registers[i]
         self._next_instruction()
 
@@ -594,7 +594,7 @@ class CPU:
         vx = args[0]
         if self._i > (4095 - vx):
             raise Exception("Memory out of bounds")
-        for i in range(vx):
+        for i in range(vx+1):
             self._registers[i] = self._memory[self._i + i]
 
         self._next_instruction()
