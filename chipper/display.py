@@ -20,6 +20,7 @@ class Display:
         self._screen = curses.initscr()
         self._screen.nodelay(True)
         curses.noecho()
+        curses.curs_set(False)
         self._buffer = np.zeros([width, height], dtype=bool)
         self.clear()
 
@@ -27,6 +28,7 @@ class Display:
         curses.nocbreak()
         self._screen.keypad(False)
         curses.echo()
+        curses.curs_set(True)
 
     def clear(self):
         """
