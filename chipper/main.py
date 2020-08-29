@@ -1,7 +1,10 @@
+import logging
 import sys
 from time import sleep
 from .cpu import CPU
 
+
+logging.basicConfig(filename='output', level=logging.DEBUG)
 
 def run():
     argv = sys.argv
@@ -20,10 +23,14 @@ def run():
         timer = 0
         while True:
             timer = cycle(cpu, timer)
-            # sleep(0.1)
+            sleep(0.001)
     except KeyboardInterrupt:
         cpu._display.deinit()
         exit(0)
+    except Exception as e:
+        cpu._display.deinit()
+        raise e
+
 
 
 def cycle(cpu, timer):
